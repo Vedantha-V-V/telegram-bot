@@ -72,11 +72,11 @@ update_event_function = {
         "properties": {
             "name": {
                 "type": "string",
-                "description": "Name of the event",
+                "description": "New name of the event",
             },
             "date": {
                 "type": "string",
-                "description": "Updated date of the event (e.g., '2025-12-13')",
+                "description": "New date of the event (e.g., '2025-12-13')",
             },
         },
         "required": ["name", "date"],
@@ -86,13 +86,13 @@ update_event_function = {
 # Get events before a specific date
 get_datewise_event_function = {
     "name": "get_datewise_event",
-    "description": "Fetches all events before a specific date",
+    "description": "Fetches all events on a specific date",
     "parameters": {
         "type": "object",
         "properties": {
             "date": {
                 "type": "string",
-                "description": "Date before which all events are required (e.g., '2024-07-29')",
+                "description": "Date on which all events are required (e.g., '2024-07-29')",
             },
         },
         "required": ["date"],
@@ -116,7 +116,7 @@ get_specific_event_function = {
 }
 
 client = genai.Client(api_key=API_KEY)
-tools = types.Tool(function_declarations=[get_events_function,add_event_function,get_specific_event_function])
+tools = types.Tool(function_declarations=[get_events_function,add_event_function,get_specific_event_function,get_datewise_event_function,update_event_function])
 config = types.GenerateContentConfig(tools=[tools])
 
 @bot.message_handler(commands=['start','hello'])
@@ -150,11 +150,13 @@ def get_all_events()->str:
     """Fetches all the upcoming updates"""
     data = collection.find()
     documents = list(data)
-    res = []
+
+    header = "Events \n" + "─" * 20 + "\n"
+    rows = []
     for document in documents:
         date = document["date"].strftime("%d/%m/%Y")
-        res.append(f"Event: {document["name"]} | Date: {date}")
-    response = "\n".join(res)
+        rows.append(f"• {document['name']}\n  {date}")
+    response = header + "\n\n".join(rows)
     return response
 
 def add_event(args:object)->str:
@@ -166,11 +168,14 @@ def add_event(args:object)->str:
     return final_message
 
 def update_event(args:object)->str:
+    print("Entered")
+    new_date = datetime.strptime(args['date'], "%Y-%m-%d")
     collection.update_one(
         {"name": args['name']},
-        {"$set": {"date": args['date']}}
+        {"$set": {"date": new_date}}
     )
     final_message="Event updated successfully"
+    return final_message
 
 def get_datewise_event(args:object)->str:
     """Getting updates based on a specific date."""
@@ -180,24 +185,28 @@ def get_datewise_event(args:object)->str:
         return "Invalid date was entered."
     data = collection.find({ "date": { "$lte":date } })
     documents = list(data)
-    res = []
+    if not documents:
+        return "Event not found"
+    header = "Events \n" + "─" * 20 + "\n"
+    rows = []
     for document in documents:
         date = document["date"].strftime("%d/%m/%Y")
-        res.append(f"Event: {document["name"]} | Date: {date}")
-    response = "\n".join(res)
+        rows.append(f"• {document['name']}\n  {date}")
+    response = header + "\n\n".join(rows)
     return response
 
 def get_specific_event(args:object)->str:
     """Adding updates to the database."""
     data = collection.find({'name':args['name']})
-    if not data:
-        return "Event not found."
     documents = list(data)
-    res = []
+    if not documents:
+        return "Event not found"
+    header = "Events \n" + "─" * 20 + "\n"
+    rows = []
     for document in documents:
         date = document["date"].strftime("%d/%m/%Y")
-        res.append(f"Date: {date}")
-    response = "\n".join(res)
+        rows.append(f"• {document['name']}\n  {date}")
+    response = header + "\n\n".join(rows)
     return response
 
 @bot.message_handler(func=lambda msg:True)
@@ -214,6 +223,7 @@ def message_handle(message):
     )
 
     tool_call = response.candidates[0].content.parts[0].function_call
+    print(tool_call)
     if not tool_call:
         res_msg = "I am not sure if I can do that. Type /help to explore more"
         bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
@@ -222,16 +232,16 @@ def message_handle(message):
         if(str(message.from_user.id)==ALLOWED_ID):
             res_msg = add_event(fun_args)
         else:
-            res_msg = "You are not authorised to add updates"
+            res_msg = "You are not authorised to add events"
         bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
     elif tool_call.name == 'get_all_events':
         confirm = "Fetching all events..."
         bot.send_message(message.chat.id, confirm, parse_mode="Markdown")
         res_msg = get_all_events()
         bot.send_message(message.chat.id,res_msg,parse_mode="Markdown")
-    elif tool_call.name == 'get_datewise_events':
+    elif tool_call.name == 'get_datewise_event':
         fun_args = response.candidates[0].content.parts[0].function_call.args
-        confirm = f"Fetching all events before {fun_args['date']}"
+        confirm = f"Fetching events..."
         bot.send_message(message.chat.id, confirm, parse_mode="Markdown")
         res_msg = get_datewise_event(fun_args)
         bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
@@ -240,6 +250,13 @@ def message_handle(message):
         confirm = f"Fetching date for {fun_args['name']}"
         bot.send_message(message.chat.id, confirm, parse_mode="Markdown")
         res_msg = get_specific_event(fun_args)
+        bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
+    elif tool_call.name == 'update_event':
+        fun_args = response.candidates[0].content.parts[0].function_call.args
+        if (str(message.from_user.id) == ALLOWED_ID):
+            res_msg = update_event(fun_args)
+        else:
+            res_msg = "You are not authorised to update events"
         bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
 
 bot.infinity_polling()

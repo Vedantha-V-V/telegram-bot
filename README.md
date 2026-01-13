@@ -1,5 +1,4 @@
 # Telegram Bot
----
 
 ## Tech Stack: 
 Python, MongoDB
