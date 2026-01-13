@@ -114,8 +114,8 @@ get_specific_event_function = {
 }
 
 client = genai.Client(api_key=API_KEY)
-tools = [get_events_function,add_event_function,get_specific_event_function,get_datewise_event_function,update_event_function]
-config = types.GenerateContentConfig(tools=tools)
+tools = types.Tool(function_declarations=[get_events_function,add_event_function,get_specific_event_function,get_datewise_event_function,update_event_function])
+config = types.GenerateContentConfig(tools=[tools])
 
 @bot.message_handler(commands=['start','hello'])
 def send_welcome(message):
