@@ -36,7 +36,7 @@ get_events_function = {
     "name": "get_all_events",
     "description": "Fetches all the updates in the database",
     "parameters": {
-        "type": "object",
+        "type": "OBJECT",
         "properties": {
 
         },
@@ -48,14 +48,14 @@ add_event_function = {
     "name": "add_event",
     "description": "Adds a specific event to the database",
     "parameters": {
-        "type": "object",
+        "type": "OBJECT",
         "properties": {
             "name": {
-                "type": "string",
+                "type": "STRING",
                 "description": "Name of the upcoming event",
             },
             "date": {
-                "type": "string",
+                "type": "STRING",
                 "description": "Date of the upcoming event (e.g., '2025-12-13')",
             },
         },
@@ -71,11 +71,11 @@ update_event_function = {
         "type": "object",
         "properties": {
             "name": {
-                "type": "string",
+                "type": "STRING",
                 "description": "New name of the event",
             },
             "date": {
-                "type": "string",
+                "type": "STRING",
                 "description": "New date of the event (e.g., '2025-12-13')",
             },
         },
@@ -91,7 +91,7 @@ get_datewise_event_function = {
         "type": "object",
         "properties": {
             "date": {
-                "type": "string",
+                "type": "STRING",
                 "description": "Date on which all events are required (e.g., '2024-07-29')",
             },
         },
@@ -104,10 +104,10 @@ get_specific_event_function = {
     "name": "get_specific_event",
     "description": "Fetches date for a specific event.",
     "parameters": {
-        "type": "object",
+        "type": "OBJECT",
         "properties": {
             "name": {
-                "type": "string",
+                "type": "STRING",
                 "description": "Name of the required event",
             },
         },
