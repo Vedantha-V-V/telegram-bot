@@ -37,9 +37,7 @@ get_events_function = {
     "description": "Fetches all the updates in the database",
     "parameters": {
         "type": "OBJECT",
-        "properties": {
-
-        },
+        "properties": {},
     },
 }
 
@@ -68,7 +66,7 @@ update_event_function = {
     "name": "update_event",
     "description": "Updates a specific event based on the name to the database",
     "parameters": {
-        "type": "object",
+        "type": "OBJECT",
         "properties": {
             "name": {
                 "type": "STRING",
@@ -88,7 +86,7 @@ get_datewise_event_function = {
     "name": "get_datewise_event",
     "description": "Fetches all events on a specific date",
     "parameters": {
-        "type": "object",
+        "type": "OBJECT",
         "properties": {
             "date": {
                 "type": "STRING",
@@ -116,8 +114,8 @@ get_specific_event_function = {
 }
 
 client = genai.Client(api_key=API_KEY)
-tools = types.Tool(function_declarations=[get_events_function,add_event_function,get_specific_event_function,get_datewise_event_function,update_event_function])
-config = types.GenerateContentConfig(tools=[tools])
+tools = [get_events_function,add_event_function,get_specific_event_function,get_datewise_event_function,update_event_function]
+config = types.GenerateContentConfig(tools=tools)
 
 @bot.message_handler(commands=['start','hello'])
 def send_welcome(message):
