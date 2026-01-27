@@ -1,10 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import telebot
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pymongo import MongoClient
+import schedule
+import time
+from threading import Thread
 
 load_dotenv()
 
@@ -207,6 +210,41 @@ def get_specific_event(args:object)->str:
     response = header + "\n\n".join(rows)
     return response
 
+# Updated send_deadline_notifications function to not send a message if there are no events
+
+def send_deadline_notifications():
+    today = datetime.now()
+    deadline = today + timedelta(days(5))
+    data = collection.find({"date": {"$lte": deadline, "$gte": today}})
+    documents = list(data)
+
+    if not documents:
+        return  # Do nothing if there are no events
+
+    header = "Upcoming Deadlines \n" + "─" * 20 + "\n"
+    rows = []
+    for document in documents:
+        date = document["date"].strftime("%d/%m/%Y")
+        rows.append(f"• {document['name']}\n  {date}")
+    message = header + "\n\n".join(rows)
+
+    bot.send_message(ALLOWED_ID, message, parse_mode="Markdown")
+
+# Schedule the task
+schedule.every().day.at("09:00").do(send_deadline_notifications)
+schedule.every().day.at("21:00").do(send_deadline_notifications)
+
+# Function to run the scheduler in a separate thread
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+# Start the scheduler in a separate thread
+scheduler_thread = Thread(target=run_scheduler)
+scheduler_thread.daemon = True
+scheduler_thread.start()
+
 @bot.message_handler(func=lambda msg:True)
 def message_handle(message):
     contents = [
@@ -221,7 +259,6 @@ def message_handle(message):
     )
 
     tool_call = response.candidates[0].content.parts[0].function_call
-    print(tool_call)
     if not tool_call:
         res_msg = "I am not sure if I can do that. Type /help to explore more"
         bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
