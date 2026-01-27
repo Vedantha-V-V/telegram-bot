@@ -221,7 +221,6 @@ def message_handle(message):
     )
 
     tool_call = response.candidates[0].content.parts[0].function_call
-    #print(tool_call)
     if not tool_call:
         res_msg = "I am not sure if I can do that. Type /help to explore more"
         bot.send_message(message.chat.id, res_msg, parse_mode="Markdown")
